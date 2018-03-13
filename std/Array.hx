@@ -51,7 +51,7 @@ extern class Array<T> {
 
 		If `a` is `null`, the result is unspecified.
 	**/
-	function concat( a : Array<T> ) : Array<T>;
+	@:pure function concat( a : Const<Array<T>> ) : Array<T>;
 
 	/**
 		Returns a string representation of `this` Array, with `sep` separating
@@ -66,7 +66,7 @@ extern class Array<T> {
 
 		If `sep` is null, the result is unspecified.
 	**/
-	function join( sep : String ) : String;
+	@:pure function join( sep : String ) : String;
 
 	/**
 		Removes the last element of `this` Array and returns it.
@@ -153,7 +153,7 @@ extern class Array<T> {
 
 		This operation modifies `this` Array in place.
 
-		If `len` is < 0 or `pos` exceeds `this`.length, an empty Array [] is 
+		If `len` is < 0 or `pos` exceeds `this`.length, an empty Array [] is
 		returned and `this` Array is unchanged.
 
 		If `pos` is negative, its value is calculated from the end	of `this`
@@ -179,7 +179,7 @@ extern class Array<T> {
 		use `Std.string()` to get a String representation that is consistent
 		across platforms.
 	**/
-	function toString() : String;
+	@:pure function toString() : String;
 
 	/**
 		Adds the element `x` at the start of `this` Array.
@@ -236,7 +236,7 @@ extern class Array<T> {
 		starting index is less than 0, the whole array will be searched, if it is greater than
 		or equal to the length of `this` Array, the function returns -1.
 	**/
-	function indexOf( x : T, ?fromIndex:Int ) : Int;
+	@:const function indexOf( x : Const<T>, ?fromIndex:Int ) : Int;
 
 	/**
 		Returns position of the last occurrence of `x` in `this` Array, searching back to front.
@@ -251,7 +251,7 @@ extern class Array<T> {
 		given or computed starting index is greater than or equal to the length of `this` Array,
 		the whole array will be searched, if it is less than 0, the function returns -1.
 	**/
-	function lastIndexOf( x : T, ?fromIndex:Int ) : Int;
+	@:const function lastIndexOf( x : Const<T>, ?fromIndex:Int ) : Int;
 
 	/**
 		Returns a shallow copy of `this` Array.
@@ -265,7 +265,7 @@ extern class Array<T> {
 	/**
 		Returns an iterator of the Array values.
 	**/
-	function iterator() : Iterator<T>;
+	@:const(:Iterator<Const<T>>) function iterator() : Iterator<T>;
 
 	/**
 		Creates a new Array by applying function `f` to all elements of `this`.
@@ -274,7 +274,7 @@ extern class Array<T> {
 
 		If `f` is null, the result is unspecified.
 	**/
-	function map<S>( f : T -> S ) : Array<S>;
+	@:pure function map<S>( f : T -> S ) : Array<S>;
 
 	/**
 		Returns an Array containing those elements of `this` for which `f`
@@ -284,5 +284,5 @@ extern class Array<T> {
 
 		If `f` is null, the result is unspecified.
 	**/
-	function filter( f : T -> Bool ) : Array<T>;
+	@:pure function filter( f : T -> Bool ) : Array<T>;
 }

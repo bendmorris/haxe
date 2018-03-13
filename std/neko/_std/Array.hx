@@ -36,9 +36,9 @@
 		return inst;
 	}
 
-	public function concat( a : Array<T>) : Array<T> {
-		var a1 = this.__a;
-		var a2 = a.__a;
+	@:pure public function concat( a : Const<Array<T>>) : Array<T> {
+		var a1:neko.NativeArray<T> = untyped this.__a;
+		var a2:neko.NativeArray<T> = untyped a.__a;
 		var s1 = this.length;
 		var s2 = a.length;
 		var a = neko.NativeArray.alloc(s1+s2);
@@ -51,7 +51,7 @@
 		return new1(neko.NativeArray.sub(this.__a,0,this.length),this.length);
 	}
 
-	public function iterator() : Iterator<T> {
+	@:const public function iterator() : Iterator<T> {
 		return untyped {
 			a : this,
 			p : 0,
@@ -79,7 +79,7 @@
 		a[pos] = x;
 	}
 
-	public function join( sep : String ) : String {
+	@:pure public function join( sep : String ) : String {
 		var s = new StringBuf();
 		var a = this.__a;
 		var max = this.length - 1;
@@ -91,7 +91,7 @@
 		return s.toString();
 	}
 
-	public function toString() : String {
+	@:pure public function toString() : String {
 		var s = new StringBuf();
 		s.add("[");
 		var it = iterator();
@@ -145,7 +145,7 @@
 		return false;
 	}
 
-	public function indexOf(x : T, ?fromIndex:Int) : Int {
+	@:pure public function indexOf(x : T, ?fromIndex:Int) : Int {
 		var len = length;
 		var i:Int = (fromIndex != null) ? fromIndex : 0;
 		var a = __a;
@@ -162,7 +162,7 @@
 		return -1;
 	}
 
-	public function lastIndexOf(x : T, ?fromIndex:Int) : Int {
+	@:pure public function lastIndexOf(x : T, ?fromIndex:Int) : Int {
 		var len = length;
 		var i:Int = (fromIndex != null) ? fromIndex : len - 1;
 		var a = __a;
@@ -269,14 +269,14 @@
 		return ret;
 	}
 
-	public function map<S>( f : T -> S ) : Array<S> {
+	@:pure public function map<S>( f : T -> S ) : Array<S> {
 		var ret = [];
 		for (elt in this)
 			ret.push(f(elt));
 		return ret;
 	}
 
-	public function filter( f : T -> Bool ) : Array<T> {
+	@:pure public function filter( f : T -> Bool ) : Array<T> {
 		var ret = [];
 		for (elt in this)
 			if (f(elt))
