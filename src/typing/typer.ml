@@ -188,7 +188,7 @@ let rec is_pos_infos = function
 		true
 	| TType (t,tl) ->
 		is_pos_infos (apply_params t.t_params tl t.t_type)
-	| TAbstract({a_path=[],"Null"},[t]) ->
+	| TAbstract({a_path=[],"Null"},[t]) | TAbstract({a_path=[],"Const"},[t]) ->
 		is_pos_infos t
 	| _ ->
 		false
@@ -1183,7 +1183,7 @@ let rec type_ident_raise ctx i p mode =
 		let e = type_module_type ctx t None p in
 		type_field ctx e name p mode
 
-and type_field ?(resume=false) ctx e i p mode =
+and type_field ?(resume=false) ?(const=false) ctx e i p mode =
 	let no_field() =
 		if resume then raise Not_found;
 		let t = match follow e.etype with
@@ -1222,6 +1222,25 @@ and type_field ?(resume=false) ctx e i p mode =
 		with Not_found ->
 			false
 	in
+	let check_const f =
+		if const && not ctx.untyped && not (Meta.has Meta.Pure f.cf_meta)
+		then display_error ctx (Printf.sprintf "Can't access non-@:pure field %s from Const value" i) p
+	in
+	let constify fa =
+		match fa with
+		| AKExpr {etype=TAbstract({a_path=[],"Const"},_)}
+		| AKExpr {etype=TAbstract({a_path=[],"Int"},_)}
+		| AKExpr {etype=TAbstract({a_path=[],"String"},_)}
+		| AKExpr {etype=TAbstract({a_path=[],"Float"},_)}
+		| AKExpr {etype=TAbstract({a_path=[],"Bool"},_)}
+		| AKExpr {etype=TEnum(_,_)}
+		| AKExpr {etype=TFun(_)}
+			-> fa
+		| AKExpr e ->
+			let const_type = TAbstract({null_abstract with a_path=([],"Const")},[e.etype]) in
+			AKExpr {e with etype = const_type}
+		| _ -> assert false
+	in
 	match follow e.etype with
 	| TInst (c,params) ->
 		let rec loop_dyn c params =
@@ -1240,6 +1259,7 @@ and type_field ?(resume=false) ctx e i p mode =
 					with Unify_error l ->
 						display_error ctx "Field resolve has an invalid type" f.cf_pos;
 						display_error ctx (error_msg (Unify [Cannot_unify(tfield,texpect)])) f.cf_pos);
+					check_const f;
 					AKExpr (make_call ctx (mk (TField (e,FInstance (c,params,f))) tfield p) [Texpr.type_constant ctx.com.basic (String i) p] t p)
 				end else
 					AKExpr (mk (TField (e,FDynamic i)) t p)
@@ -1267,7 +1287,18 @@ and type_field ?(resume=false) ctx e i p mode =
 				| _ ->
 					display_error ctx "Normal variables cannot be accessed with 'super', use 'this' instead" p);
 			if not (can_access ctx c f false) && not ctx.untyped then display_error ctx ("Cannot access private field " ^ i) p;
-			field_access ctx mode f (match c2 with None -> FAnon f | Some (c,tl) -> FInstance (c,tl,f)) (apply_params c.cl_params params t) e p
+			let fa = field_access ctx mode f (match c2 with None -> FAnon f | Some (c,tl) -> FInstance (c,tl,f)) (apply_params c.cl_params params t) e p
+			in
+			match const,mode,f.cf_kind with
+				| true,MGet,Var {v_read = AccNormal} ->
+					constify fa
+				| true,MSet,Var {v_write = AccNormal} ->
+					display_error ctx (Printf.sprintf "Can't write to field %s from Const value" i) p;
+					fa
+				| true,_,_ ->
+					check_const f;
+					fa
+				| _ -> fa
 		with Not_found -> try
 			begin match e.eexpr with
 				| TConst TSuper -> raise Not_found
@@ -1284,7 +1315,7 @@ and type_field ?(resume=false) ctx e i p mode =
 							begin match follow t with
 								| TAbstract({a_impl = Some c},tl) when PMap.mem i c.cl_statics ->
 									let e = mk_cast e t p in
-									type_field ctx e i p mode;
+									type_field ~const:const ctx e i p mode;
 								| _ ->
 									loop tl
 							end
@@ -1327,13 +1358,23 @@ and type_field ?(resume=false) ctx e i p mode =
 						add_constraint_checks ctx [] [] f monos p;
 						FAnon f, t
 			) in
-			field_access ctx mode f fmode ft e p
+			let fa = field_access ctx mode f fmode ft e p in
+			match const,mode with
+				| true,MGet ->
+					constify fa
+				| true,MSet ->
+					display_error ctx (Printf.sprintf "Can't write to field %s from Const value" i) p;
+					fa
+				| true,_ ->
+					check_const f;
+					fa
+				| _ -> fa
 		with Not_found -> try
 				match !(a.a_status) with
 				| Statics {cl_kind = KAbstractImpl a} when does_forward a true ->
 					let mt = try module_type_of_type a.a_this with Exit -> raise Not_found in
 					let et = type_module_type ctx mt None p in
-					type_field ctx et i p mode;
+					type_field ~const:const ctx et i p mode;
 				| _ ->
 					raise Not_found
 			with Not_found ->
@@ -1382,11 +1423,13 @@ and type_field ?(resume=false) ctx e i p mode =
 				let t = field_type f in
 				let r = match follow t with TFun(_,r) -> r | _ -> raise Not_found in
 				let ef = field_expr f t in
+				check_const f;
 				AKExpr(make_call ctx ef [e] r p)
 			| MSet, Var {v_write = AccCall } ->
 				let f = PMap.find ("set_" ^ f.cf_name) c.cl_statics in
 				let t = field_type f in
 				let ef = field_expr f t in
+				check_const f;
 				AKUsing (ef,c,f,e)
 			| (MGet | MCall), Var {v_read = AccNever} ->
 				AKNo f.cf_name
@@ -1410,19 +1453,26 @@ and type_field ?(resume=false) ctx e i p mode =
 					| _ -> error ("Invalid call to static function " ^ i ^ " through abstract instance") p
 				end;
 				let ef = field_expr f t in
+				check_const f;
 				AKUsing (ef,c,f,e)
 			| MSet, _ ->
 				error "This operation is unsupported" p)
 		with Not_found -> try
+			(* Const<T> fields *)
+			match a,pl with
+				| {a_path=[],"Const"}, [u] ->
+					type_field ~resume:true ~const:true ctx {e with etype = u} i p mode
+				| _ -> raise Not_found
+		with Not_found -> try
 			if does_forward a false then
-				type_field ~resume:true ctx {e with etype = apply_params a.a_params pl a.a_this} i p mode
+				type_field ~resume:true ~const:const ctx {e with etype = apply_params a.a_params pl a.a_this} i p mode
 			else
 				raise Not_found
 		with Not_found -> try
 			using_field ctx mode e i p
 		with Not_found -> try
 			(match ctx.curfun, e.eexpr with
-			| FunMemberAbstract, TConst (TThis) -> type_field ctx {e with etype = apply_params a.a_params pl a.a_this} i p mode;
+			| FunMemberAbstract, TConst (TThis) -> type_field ~const:const ctx {e with etype = apply_params a.a_params pl a.a_this} i p mode;
 			| _ -> raise Not_found)
 		with Not_found -> try
 			let c,cf = match a.a_impl,a.a_resolve with

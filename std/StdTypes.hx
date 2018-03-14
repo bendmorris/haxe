@@ -155,3 +155,14 @@ typedef Iterable<T> = {
 	@see https://haxe.org/manual/types-abstract-array-access.html
 **/
 extern interface ArrayAccess<T> { }
+
+/**
+	`Const` creates a read-only view of a value. A Const value:
+
+	- Allows accessing fields, but disallows field assignment;
+	- Will return `Const<U>` in place of `U` for field access;
+	- Allows only side-effect-free functions (with `@:const` metadata) to be
+	called.
+**/
+@:coreType
+abstract Const<T> from T { }

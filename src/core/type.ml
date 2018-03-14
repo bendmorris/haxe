@@ -1768,6 +1768,14 @@ let rec type_eq param a b =
 		type_eq param t b
 	| _,TAbstract ({a_path=[],"Null"},[t]) when param <> EqDoNotFollowNull ->
 		type_eq param a t
+	| t1,TAbstract ({a_path=[],"Const"},[t2]) when (match t1 with
+		| TAbstract({a_path=[],"Int"},_)
+		| TAbstract({a_path=[],"String"},_)
+		| TAbstract({a_path=[],"Float"},_)
+		| TAbstract({a_path=[],"Bool"},_)
+		| TEnum(_,_)
+		| TFun(_) -> true
+		| _ -> false) -> type_eq param t1 t2
 	| TAbstract (a1,tl1) , TAbstract (a2,tl2) ->
 		if a1 != a2 && not (param = EqCoreType && a1.a_path = a2.a_path) then error [cannot_unify a b];
 		List.iter2 (type_eq param) tl1 tl2
