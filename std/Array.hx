@@ -51,7 +51,7 @@ extern class Array<T> {
 
 		If `a` is `null`, the result is unspecified.
 	**/
-	@:pure function concat( a : Const<Array<T>> ) : Array<T>;
+	@:const function concat( a : Const<Array<T>> ) : Array<T>;
 
 	/**
 		Returns a string representation of `this` Array, with `sep` separating
@@ -66,7 +66,7 @@ extern class Array<T> {
 
 		If `sep` is null, the result is unspecified.
 	**/
-	@:pure function join( sep : String ) : String;
+	@:const function join( sep : String ) : String;
 
 	/**
 		Removes the last element of `this` Array and returns it.
@@ -179,7 +179,7 @@ extern class Array<T> {
 		use `Std.string()` to get a String representation that is consistent
 		across platforms.
 	**/
-	@:pure function toString() : String;
+	@:const function toString() : String;
 
 	/**
 		Adds the element `x` at the start of `this` Array.
@@ -260,7 +260,7 @@ extern class Array<T> {
 		`a[i] == a.copy()[i]` is true for any valid `i`. However,
 		`a == a.copy()` is always false.
 	**/
-	function copy() : Array<T>;
+	@:const function copy() : Array<T>;
 
 	/**
 		Returns an iterator of the Array values.
@@ -274,7 +274,7 @@ extern class Array<T> {
 
 		If `f` is null, the result is unspecified.
 	**/
-	@:pure function map<S>( f : T -> S ) : Array<S>;
+	@:const function map<S>( f : T -> S ) : Array<S>;
 
 	/**
 		Returns an Array containing those elements of `this` for which `f`
@@ -284,5 +284,5 @@ extern class Array<T> {
 
 		If `f` is null, the result is unspecified.
 	**/
-	@:pure function filter( f : T -> Bool ) : Array<T>;
+	@:const function filter( f : T -> Bool ) : Array<T>;
 }

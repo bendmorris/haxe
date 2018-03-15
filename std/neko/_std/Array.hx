@@ -22,7 +22,7 @@
 @:coreApi @:final class Array<T> {
 
 	private var __a : neko.NativeArray<T>;
-	public var length(default,null) : Int;
+	@:const public var length(default,null) : Int;
 
 	public function new() : Void {
 		this.__a = neko.NativeArray.alloc(0);
@@ -36,7 +36,7 @@
 		return inst;
 	}
 
-	@:pure public function concat( a : Const<Array<T>>) : Array<T> {
+	@:const public function concat( a : Const<Array<T>>) : Array<T> {
 		var a1:neko.NativeArray<T> = untyped this.__a;
 		var a2:neko.NativeArray<T> = untyped a.__a;
 		var s1 = this.length;
@@ -51,7 +51,7 @@
 		return new1(neko.NativeArray.sub(this.__a,0,this.length),this.length);
 	}
 
-	@:const public function iterator() : Iterator<T> {
+	@:const(:Iterator<Const<T>>) public function iterator() : Iterator<T> {
 		return untyped {
 			a : this,
 			p : 0,
@@ -79,7 +79,7 @@
 		a[pos] = x;
 	}
 
-	@:pure public function join( sep : String ) : String {
+	@:const public function join( sep : String ) : String {
 		var s = new StringBuf();
 		var a = this.__a;
 		var max = this.length - 1;
@@ -91,7 +91,7 @@
 		return s.toString();
 	}
 
-	@:pure public function toString() : String {
+	@:const public function toString() : String {
 		var s = new StringBuf();
 		s.add("[");
 		var it = iterator();
@@ -145,7 +145,7 @@
 		return false;
 	}
 
-	@:pure public function indexOf(x : T, ?fromIndex:Int) : Int {
+	@:const public function indexOf(x : T, ?fromIndex:Int) : Int {
 		var len = length;
 		var i:Int = (fromIndex != null) ? fromIndex : 0;
 		var a = __a;
@@ -162,7 +162,7 @@
 		return -1;
 	}
 
-	@:pure public function lastIndexOf(x : T, ?fromIndex:Int) : Int {
+	@:const public function lastIndexOf(x : T, ?fromIndex:Int) : Int {
 		var len = length;
 		var i:Int = (fromIndex != null) ? fromIndex : len - 1;
 		var a = __a;
@@ -269,14 +269,14 @@
 		return ret;
 	}
 
-	@:pure public function map<S>( f : T -> S ) : Array<S> {
+	@:const public function map<S>( f : T -> S ) : Array<S> {
 		var ret = [];
 		for (elt in this)
 			ret.push(f(elt));
 		return ret;
 	}
 
-	@:pure public function filter( f : T -> Bool ) : Array<T> {
+	@:const public function filter( f : T -> Bool ) : Array<T> {
 		var ret = [];
 		for (elt in this)
 			if (f(elt))

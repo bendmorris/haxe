@@ -6,4 +6,7 @@ ab.toString() == ba.toString();
 a.push(4);
 b.indexOf(4) == 3;
 
+var i = b.iterator();
+$type(i);
 for (i in b) a.indexOf(i) > -1;
+//for (i in b) trace(i);
